@@ -1,31 +1,46 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/product.dart';
-import '../models/sort_option.dart';
+import '../services/product_filter_service.dart';
 import 'category_filter_provider.dart';
 import 'product_providers.dart';
 import 'search_query_provider.dart';
 import 'sort_option_provider.dart';
 
+/// Combines catalog [AsyncValue] with all filter/sort providers.
+///
+/// Watches:
+/// - [productsProvider] — async product list
+/// - [categoryFilterProvider] — selected category (`null` = all)
+/// - [searchQueryProvider] — free-text search
+/// - [sortOptionProvider] — price / name sort
+///
+/// Returns [AsyncValue] so UI can show loading / error / data via `.when`.
 final filteredProductsProvider = Provider<AsyncValue<List<Product>>>((ref) {
-  final products = ref.watch(productsProvider);
+  final productsAsync = ref.watch(productsProvider);
   final category = ref.watch(categoryFilterProvider);
   final sort = ref.watch(sortOptionProvider);
-  final query = ref.watch(searchQueryProvider).toLowerCase().trim();
+  final query = ref.watch(searchQueryProvider);
 
-  return products.whenData((list) {
-    var result = list.toList();
-    if (category != null) {
-      result = result.where((p) => p.category == category).toList();
-    }
-    if (query.isNotEmpty) {
-      result = result.where((p) => p.title.toLowerCase().contains(query)).toList();
-    }
-    result.sort((a, b) => switch (sort) {
-          SortOption.priceAsc => a.price.compareTo(b.price),
-          SortOption.priceDesc => b.price.compareTo(a.price),
-          SortOption.nameAsc => a.title.compareTo(b.title),
-        });
-    return result;
-  });
+  return productsAsync.whenData(
+    (products) => ProductFilterService.apply(
+      products: products,
+      category: category,
+      searchQuery: query,
+      sort: sort,
+    ),
+  );
+});
+
+/// Convenience: current filter snapshot for debugging / UI chips.
+final activeFiltersSummaryProvider = Provider<String>((ref) {
+  final category = ref.watch(categoryFilterProvider);
+  final sort = ref.watch(sortOptionProvider);
+  final query = ref.watch(searchQueryProvider).trim();
+  final parts = <String>[
+    if (category != null) 'category=$category',
+    if (query.isNotEmpty) 'q=$query',
+    'sort=${sort.name}',
+  ];
+  return parts.join(' · ');
 });

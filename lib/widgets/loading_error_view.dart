@@ -3,7 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../theme/app_colors.dart';
 
-class LoadingErrorView extends StatelessWidget {
+/// Renders [AsyncValue] with explicit loading / error / data branches.
+///
+/// Used for [productsProvider], [filteredProductsProvider], [productByIdProvider],
+/// and [categoriesProvider] so every async screen handles [AsyncValue] consistently.
+class LoadingErrorView<T> extends StatelessWidget {
   const LoadingErrorView({
     super.key,
     required this.value,
@@ -11,22 +15,28 @@ class LoadingErrorView extends StatelessWidget {
     required this.builder,
   });
 
-  final AsyncValue<dynamic> value;
+  final AsyncValue<T> value;
   final VoidCallback onRetry;
-  final Widget Function(dynamic data) builder;
+  final Widget Function(T data) builder;
 
   @override
   Widget build(BuildContext context) {
     return value.when(
       data: builder,
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, _) => Center(
+      error: (err, stackTrace) => Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('$err', textAlign: TextAlign.center),
+              const Icon(Icons.cloud_off_outlined, size: 40, color: AppColors.muted),
+              const SizedBox(height: 12),
+              Text(
+                '$err',
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: AppColors.text),
+              ),
               const SizedBox(height: 12),
               FilledButton(
                 onPressed: onRetry,

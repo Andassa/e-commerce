@@ -14,11 +14,11 @@ class CategoryFilterBar extends ConsumerWidget {
     final selected = ref.watch(categoryFilterProvider);
     return SizedBox(
       height: 40,
-      child: LoadingErrorView(
+      child: LoadingErrorView<List<String>>(
         value: ref.watch(categoriesProvider),
         onRetry: () => ref.invalidate(categoriesProvider),
         builder: (cats) {
-          final items = <String?>[null, ...cats as List<String>];
+          final items = <String?>[null, ...cats];
           return ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: items.length,

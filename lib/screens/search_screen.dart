@@ -74,11 +74,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               ),
             ),
             Expanded(
-              child: LoadingErrorView(
+              child: LoadingErrorView<List<Product>>(
                 value: async,
                 onRetry: () => ref.invalidate(productsProvider),
-                builder: (data) {
-                  final products = data as List<Product>;
+                builder: (products) {
                   return GridView.builder(
                     padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(

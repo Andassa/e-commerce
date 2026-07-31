@@ -37,11 +37,10 @@ class CatalogScreen extends ConsumerWidget {
             ),
           ),
           Expanded(
-            child: LoadingErrorView(
+            child: LoadingErrorView<List<Product>>(
               value: ref.watch(filteredProductsProvider),
               onRetry: () => ref.invalidate(productsProvider),
-              builder: (data) {
-                final products = data as List<Product>;
+              builder: (products) {
                 return RefreshIndicator(
                   onRefresh: () async => ref.invalidate(productsProvider),
                   child: GridView.builder(

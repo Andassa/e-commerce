@@ -18,11 +18,10 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       body: SafeArea(
-        child: LoadingErrorView(
+        child: LoadingErrorView<List<Product>>(
           value: ref.watch(filteredProductsProvider),
           onRetry: () => ref.invalidate(productsProvider),
-          builder: (data) {
-            final products = data as List<Product>;
+          builder: (products) {
             final featured = products.take(6).toList();
             final popular = products.length > 6
                 ? products.skip(6).take(6).toList()

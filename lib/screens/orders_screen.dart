@@ -47,11 +47,11 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen>
           ],
         ),
       ),
-      body: LoadingErrorView(
+      body: LoadingErrorView<List<Product>>(
         value: ref.watch(productsProvider),
         onRetry: () => ref.invalidate(productsProvider),
-        builder: (data) {
-          final products = (data as List<Product>).take(3).toList();
+        builder: (all) {
+          final products = all.take(3).toList();
           return TabBarView(
             controller: _tabs,
             children: [

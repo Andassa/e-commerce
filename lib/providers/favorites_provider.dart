@@ -2,30 +2,43 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/favorites_local_datasource.dart';
 
-final favoritesLocalDatasourceProvider = Provider((ref) {
+final favoritesLocalDatasourceProvider = Provider<FavoritesLocalDatasource>((ref) {
   return FavoritesLocalDatasource();
 });
 
-/// Persists favorite product IDs via shared_preferences.
+/// Loads favorites from [FavoritesLocalDatasource] on init,
+/// and saves after every mutation — local persistence is always wired.
 class FavoritesNotifier extends StateNotifier<Set<int>> {
-  FavoritesNotifier(this._ds) : super({}) {
-    _load();
+  FavoritesNotifier(this._datasource) : super(const <int>{}) {
+    loadFromLocalStorage();
   }
 
-  final FavoritesLocalDatasource _ds;
+  final FavoritesLocalDatasource _datasource;
 
-  Future<void> _load() async {
-    state = await _ds.load();
+  /// Hydrate state from shared_preferences.
+  Future<void> loadFromLocalStorage() async {
+    final ids = await _datasource.load();
+    state = Set<int>.unmodifiable(ids);
   }
 
-  Future<void> toggleFavorite(int id) async {
-    final next = {...state};
-    next.contains(id) ? next.remove(id) : next.add(id);
-    state = next;
-    await _ds.save(state);
+  /// Toggle favorite and persist the new set locally.
+  Future<void> toggleFavorite(int productId) async {
+    final next = Set<int>.from(state);
+    if (next.contains(productId)) {
+      next.remove(productId);
+    } else {
+      next.add(productId);
+    }
+    state = Set<int>.unmodifiable(next);
+    await _datasource.save(next);
   }
 
-  bool isFavorite(int id) => state.contains(id);
+  bool isFavorite(int productId) => state.contains(productId);
+
+  Future<void> clearFavorites() async {
+    state = const <int>{};
+    await _datasource.clear();
+  }
 }
 
 final favoritesProvider =

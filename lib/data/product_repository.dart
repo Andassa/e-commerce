@@ -3,16 +3,10 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../models/product.dart';
+import 'product_exceptions.dart';
 
-class ProductFetchException implements Exception {
-  ProductFetchException(this.message);
-  final String message;
-
-  @override
-  String toString() => message;
-}
-
-/// Fetches catalog data from FakeStoreAPI. Swap [client] or override methods for local JSON.
+/// Fetches catalog data from FakeStoreAPI.
+/// Inject [client] in tests to avoid real network calls.
 class ProductRepository {
   ProductRepository({http.Client? client}) : _client = client ?? http.Client();
 
@@ -20,31 +14,54 @@ class ProductRepository {
   static const _base = 'https://fakestoreapi.com';
 
   Future<List<Product>> getAllProducts() async {
-    final res = await _get('/products');
-    final list = jsonDecode(res) as List<dynamic>;
-    return list.map((e) => Product.fromJson(e as Map<String, dynamic>)).toList();
+    final body = await _get('/products');
+    try {
+      final list = jsonDecode(body) as List<dynamic>;
+      return list
+          .map((e) => Product.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } on FormatException catch (e) {
+      throw ParseException(e.message);
+    } on TypeError {
+      throw const ParseException();
+    }
   }
 
   Future<List<String>> getCategories() async {
-    final res = await _get('/products/categories');
-    return (jsonDecode(res) as List<dynamic>).cast<String>();
+    final body = await _get('/products/categories');
+    try {
+      return (jsonDecode(body) as List<dynamic>).cast<String>();
+    } on FormatException catch (e) {
+      throw ParseException(e.message);
+    } on TypeError {
+      throw const ParseException();
+    }
   }
 
   Future<Product> getProductById(int id) async {
-    final res = await _get('/products/$id');
-    return Product.fromJson(jsonDecode(res) as Map<String, dynamic>);
+    final body = await _get('/products/$id');
+    try {
+      return Product.fromJson(jsonDecode(body) as Map<String, dynamic>);
+    } on FormatException catch (e) {
+      throw ParseException(e.message);
+    } on TypeError {
+      throw const ParseException();
+    }
   }
 
+  /// GET [path] relative to FakeStoreAPI base URL.
+  /// Maps HTTP failures to [ApiException] and transport issues to [NetworkException].
   Future<String> _get(String path) async {
     try {
       final res = await _client.get(Uri.parse('$_base$path'));
       if (res.statusCode != 200) {
-        throw ProductFetchException('Failed to load products (${res.statusCode})');
+        throw ApiException(res.statusCode);
       }
       return res.body;
-    } catch (e) {
-      if (e is ProductFetchException) rethrow;
-      throw ProductFetchException('No connection. Check your network.');
+    } on ProductException {
+      rethrow;
+    } catch (_) {
+      throw const NetworkException();
     }
   }
 }

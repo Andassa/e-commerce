@@ -22,12 +22,11 @@ class FavoritesScreen extends ConsumerWidget {
         ),
         title: const Text('Favorites'),
       ),
-      body: LoadingErrorView(
+      body: LoadingErrorView<List<Product>>(
         value: ref.watch(productsProvider),
         onRetry: () => ref.invalidate(productsProvider),
-        builder: (data) {
-          final products =
-              (data as List<Product>).where((p) => favIds.contains(p.id)).toList();
+        builder: (all) {
+          final products = all.where((p) => favIds.contains(p.id)).toList();
           if (products.isEmpty) {
             return const Center(child: Text('No favorites yet'));
           }
