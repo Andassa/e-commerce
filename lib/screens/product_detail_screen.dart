@@ -1,0 +1,47 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../models/product.dart';
+import '../providers/cart_provider.dart';
+import '../providers/product_providers.dart';
+import '../widgets/loading_error_view.dart';
+import '../widgets/product_detail_body.dart';
+
+class ProductDetailScreen extends ConsumerStatefulWidget {
+  const ProductDetailScreen({super.key, required this.productId});
+  final int productId;
+
+  @override
+  ConsumerState<ProductDetailScreen> createState() => _State();
+}
+
+class _State extends ConsumerState<ProductDetailScreen> {
+  String _size = '8';
+
+  void _add(Product product) {
+    ref.read(cartProvider.notifier).addToCart(product);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Added to cart')),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: LoadingErrorView(
+        value: ref.watch(productByIdProvider(widget.productId)),
+        onRetry: () => ref.invalidate(productByIdProvider(widget.productId)),
+        builder: (data) {
+          final product = data as Product;
+          return ProductDetailBody(
+            product: product,
+            size: _size,
+            onSize: (s) => setState(() => _size = s),
+            onBuy: () => _add(product),
+            onCart: () => _add(product),
+          );
+        },
+      ),
+    );
+  }
+}
